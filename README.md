@@ -1,10 +1,15 @@
-# Project Name
-Put here a short paragraph describing your project. 
-Adding an screenshot or a mockup of your application in action would be nice.  
+# Cyclomatic Complexity Analyzer
 
-![This is a screenshot.](images.png)
+Cyclomatic Complexity Analyzer is a project for analyzing the Cyclomatic Complexity Number. 
+
+Cyclomatic Complexity is a software metric that is used to indicate the complexity of the program. 
+
+Through this project, we will gather information through analyzing various public projects on Github,
+and identify part of the code that impacts the Cyclomatic Complexity Number the most.
+
+![General Idea](../../OneDrive/바탕 화면/Screen_Shot_2022-10-20_at_2.56.29_PM.png)
 # How to run
-Provide here instructions on how to use your application.   
+ 
 - Download the latest binary from the Release section on the right on GitHub.  
 - On the command line uncompress using
 ```
