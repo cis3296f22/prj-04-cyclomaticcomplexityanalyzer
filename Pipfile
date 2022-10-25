@@ -5,8 +5,10 @@ name = "pypi"
 
 [packages]
 lizard = "*"
+pyinstaller = "*"
 
 [dev-packages]
 
 [requires]
-python_version = "3.9"
+# Actually >=3.7 but Pipfile doesn't support this
+python_version = "3"
