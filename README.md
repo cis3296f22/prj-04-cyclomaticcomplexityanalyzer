@@ -20,9 +20,8 @@ tar -xzf
 Follow this project board to know the latest status of the project: [http://...]([http://...])  
 
 ### How to build
-- Use this github repository: ... 
-- Specify what branch to use for a more stable release or for cutting edge development.  
-- Use InteliJ 11
-- Specify additional library to download if needed 
-- What file and target to compile and run. 
-- What is expected to happen when the app start. 
+- Install Python. Building the project requires at least Python 3.7.
+- Install `pipenv` using `pip install -U pipenv`.
+- Run `pipenv update` in the working directory to synchronize the dependencies in the Pipfile.
+- Run `pipenv shell` in the working directory to create a subshell in the project's virtualenv.
+- Run `pyinstaller -F main.py` in the subshell. This will create an executable binary file at `dist/main.exe`

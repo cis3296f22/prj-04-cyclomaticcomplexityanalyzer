@@ -1,0 +1,14 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+lizard = "*"
+pyinstaller = "*"
+
+[dev-packages]
+
+[requires]
+# Actually >=3.7 but Pipfile doesn't support this
+python_version = "3"
