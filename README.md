@@ -22,5 +22,6 @@ Follow this project board to know the latest status of the project: [http://...]
 ### How to build
 - Install Python. Building the project requires at least Python 3.7.
 - Install `pipenv` using `pip install -U pipenv`.
-- Run `pipenv update` in the working directory.
-- Run `pyinstaller -F main.py` in the working directory. This will create an executable binary file at `dist/main.exe`
+- Run `pipenv update` in the working directory to synchronize the dependencies in the Pipfile.
+- Run `pipenv shell` in the working directory to create a subshell in the project's virtualenv.
+- Run `pyinstaller -F main.py` in the subshell. This will create an executable binary file at `dist/main.exe`
