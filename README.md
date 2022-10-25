@@ -1,26 +1,32 @@
 # Cyclomatic Complexity Analyzer
 
-Cyclomatic Complexity Analyzer is a project for analyzing the Cyclomatic Complexity Number. 
-
-Cyclomatic Complexity is a software metric that is used to indicate the complexity of the program. 
+Cyclomatic Complexity is a software metric that is used to indicate the complexity of the program.
 
 Through this project, we will gather information through analyzing various public projects on Github,
-and identify part of the code that impacts the Cyclomatic Complexity Number the most.
+and identify part of the code that impacts the Cyclomatic Complexity Number the most through Machine Learning.
+
+
 
 <img width="766" alt="Screen_Shot_2022-10-20_at_2 56 29_PM" src="https://user-images.githubusercontent.com/97626684/197665715-34e22a16-06f4-40e3-81c0-12e7fc5a079b.png">
 
-# How to run
- 
-- Download the latest binary from the Release section on the right on GitHub.  
-- On the command line uncompress using
+# Setup
+
+- Fully working Database is Required to store data. We will be using MariaDB powered by AWS
+- There are several Python that will be required to run and build the program successfully.
+- Use of Jupyter Notebook is recommended (https://jupyter.org/)
 ```
-tar -xzf  
+pip install lizard
+pip install flask
+pip install pandas
+pip install ast
+pip install pymysql
 ```
-- On the command line run with
-```
-./hello
-```
-- You will see Hello World! on your terminal. 
+These are the basic python libraries that will be needed for the program. 
+- [Lizard](https://github.com/terryyin/lizard/): Python Library that calculates the Cyclomatic Complexity Number for the Code.
+- [Flask](https://github.com/pallets/flask): Python Framework that will be used to build API to connect with the actor and with the analyzer
+- ast : Parser that will be used to parse the code
+- [Pandas](https://github.com/pandas-dev/pandas) : Python Library that lets you create dataframes to store data
+- [pymysql](https://github.com/PyMySQL/PyMySQL) : Python Libaray that allows you to directly send your pandas dataframe to the database. 
 
 # How to contribute
 Follow this project board to know the latest status of the project: [http://...]([http://...])  
