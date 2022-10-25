@@ -1,0 +1,11 @@
+# Configuration
+.env
+.idea
+
+# Dependency management
+Pipfile.lock
+
+# pyinstaller build artifacts
+build
+dist
+*.spec
