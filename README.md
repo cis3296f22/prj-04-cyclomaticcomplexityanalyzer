@@ -29,12 +29,11 @@ These are the basic python libraries that will be needed for the program.
 - [pymysql](https://github.com/PyMySQL/PyMySQL) : Python Libaray that allows you to directly send your pandas dataframe to the database. 
 
 # How to contribute
-Follow this project board to know the latest status of the project: [http://...]([http://...])  
+Follow this project board to know the latest status of the project
 
-### How to build
-- Use this github repository: ... 
-- Specify what branch to use for a more stable release or for cutting edge development.  
-- Use InteliJ 11
-- Specify additional library to download if needed 
-- What file and target to compile and run. 
-- What is expected to happen when the app start. 
+# Road Map
+- Build an API to connect with the Actor [In Progress]
+- Build an API to connect between scraper & analyzer [In Progress]
+- Create new code statistics 
+- Analyze Code and store data into the DB
+- Get efficient amount of data for the ML process
