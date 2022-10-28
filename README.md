@@ -14,14 +14,9 @@ and identify part of the code that impacts the Cyclomatic Complexity Number the 
 - Fully working Database is Required to store data. We will be using MariaDB powered by AWS
 - There are several Python that will be required to run and build the program successfully.
 - Use of Jupyter Notebook is recommended (https://jupyter.org/)
-```
-pip install lizard
-pip install flask
-pip install pandas
-pip install ast
-pip install pymysql
-```
-These are the basic python libraries that will be needed for the program. 
+- Full PIP requirements found [here](requirements.txt)
+
+These are the essential python libraries that will be needed for the program. 
 - [Lizard](https://github.com/terryyin/lizard/): Python Library that calculates the Cyclomatic Complexity Number for the Code.
 - [Flask](https://github.com/pallets/flask): Python Framework that will be used to build API to connect with the actor and with the analyzer
 - ast : Parser that will be used to parse the code
