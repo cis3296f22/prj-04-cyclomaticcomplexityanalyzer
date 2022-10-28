@@ -10,8 +10,8 @@ import time
 
 
 #Github token
-user = 'USERNAME_GOES_HERE'
-token = 'YOUR_ACCESS_TOKEN_GOES_HERE'
+user = 'yoonjaejasonlee'
+token = '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'
 
 app = Flask(__name__)
 
@@ -20,11 +20,11 @@ cursor = None
 
 try:
     conn = pymysql.connect(
-        user = 'SQL_USERNAME',
-        password = 'pasword_goes_here',
-        host = 'SQL_HOSTNAME',
-        port = 'SQL_PORTNAME',
-        db = 'DATABASE_NAME'
+        user='root',
+        password='templecis3296',
+        host='database.cyiemvkpnbr7.us-east-1.rds.amazonaws.com',
+        port=3306,
+        db='Project_Data'
     )
     cursor = conn.cursor()
 except pymysql.Error as e:
@@ -53,9 +53,15 @@ def scrape(url):
         j = s['html_url']
         listing.append(j)
 
-    urls = "http://127.0.0.1/repos"
+    urls = "http://127.0.0.1:5000/repos"
     headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
     requests.post(urls, json=json.dumps(listing), headers=headers)
+
+total_list = []
+cursor.execute(f"SELECT URL FROM Data")
+db_url = [item[0] for item in cursor.fetchall()]
+total_list.extend(db_url)
+
 
 def crawling(url):
     requested = urllib.request.Request(url)
@@ -90,7 +96,7 @@ def crawling(url):
 
             i = i + 1
             month_list.clear()
-    urls = "http://127.0.0.1/repos"
+    urls = "http://127.0.0.1:5000/repos"
     headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
     requests.post(urls, json=json.dumps(final_list), headers=headers)
     time.sleep(10)
@@ -99,4 +105,5 @@ def crawling(url):
 
 if __name__ == "__main__":
     app.run(host="127.0.0.1",
+            port=4999,
             debug=True)
