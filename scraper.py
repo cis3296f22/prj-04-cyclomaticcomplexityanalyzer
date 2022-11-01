@@ -1,17 +1,21 @@
-import pandas as pd
-import urllib.request
-import requests
 import json
-import pymysql
-from flask import Flask, jsonify
+import os
 import sys
-from pandas.tseries.offsets import MonthEnd, YearEnd
 import time
+import urllib.request
 
+import pandas as pd
+import pymysql
+import requests
+from dotenv import load_dotenv
+from flask import Flask, jsonify
+from pandas.tseries.offsets import YearEnd
 
-#Github token
-user = 'yoonjaejasonlee'
-token = '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'
+load_dotenv()
+
+# Github token
+user = os.getenv('GITHUB_USER')
+token = os.getenv('GITHUB_TOKEN')
 
 app = Flask(__name__)
 
@@ -20,17 +24,17 @@ cursor = None
 
 try:
     conn = pymysql.connect(
-        user='root',
-        password='templecis3296',
-        host='database.cyiemvkpnbr7.us-east-1.rds.amazonaws.com',
+        user=os.getenv('DB_USER'),
+        password=os.getenv('DB_PASSWORD'),
+        host=os.getenv('DB_HOST'),
         port=3306,
-        db='Project_Data'
+        db=os.getenv('DB_NAME'),
     )
     cursor = conn.cursor()
 except pymysql.Error as e:
-
     print(f"Error connecting to MariaDB: {e}")
     sys.exit(1)
+
 
 @app.route('/<string:language>/<int:stars>/<int:forks>/<int:years>/', methods=['GET'])
 def to_scraper(language, stars, forks, years):
@@ -56,6 +60,7 @@ def scrape(url):
     urls = "http://127.0.0.1:5000/repos"
     headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
     requests.post(urls, json=json.dumps(listing), headers=headers)
+
 
 total_list = []
 cursor.execute(f"SELECT URL FROM Data")
