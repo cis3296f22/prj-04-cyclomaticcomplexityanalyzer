@@ -9,7 +9,11 @@ and identify part of the code that impacts the Cyclomatic Complexity Number the 
 
 <img width="766" alt="Screen_Shot_2022-10-20_at_2 56 29_PM" src="https://user-images.githubusercontent.com/97626684/197665715-34e22a16-06f4-40e3-81c0-12e7fc5a079b.png">
 
+# Class Diagram
 ![2022-10-31_19-46](https://user-images.githubusercontent.com/42981577/199322911-a0d613ba-e95b-459d-ac31-e9b822e16af4.png)
+  
+  First, we use the class scraper to “scrap”/clone by using GitHub API the project from GitHub into a certain directory. Then in the main, we read the files in the local repository that we just cloned. Next, we call the lizard API, to help us analyze the code’s cyclomatic complexity number.
+
 
 
 # Setup
