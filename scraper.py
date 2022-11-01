@@ -1,22 +1,21 @@
 import json
+import yaml
 import os
 import sys
 import time
 import urllib.request
-
 import pandas as pd
 import pymysql
 import requests
-from dotenv import load_dotenv
 from flask import Flask, jsonify
 from pandas.tseries.offsets import YearEnd
 
-load_dotenv()
+with open('config.yml') as f:
+    keys = yaml.load(f, Loader=yaml.FullLoader)
 
 # Github token
-user = os.getenv('GITHUB_USER')
-token = os.getenv('GITHUB_TOKEN')
-
+user = keys['Keys']['GITHUB_USER']
+token = keys['Keys']['GITHUB_TOKEN']
 app = Flask(__name__)
 
 conn = None
@@ -24,11 +23,11 @@ cursor = None
 
 try:
     conn = pymysql.connect(
-        user=os.getenv('DB_USER'),
-        password=os.getenv('DB_PASSWORD'),
-        host=os.getenv('DB_HOST'),
+        user=keys['Keys']['DB_USER'],
+        password=keys['Keys']['DB_PASSWORD'],
+        host=keys['Keys']['DB_HOST'],
         port=3306,
-        db=os.getenv('DB_NAME'),
+        db=keys['Keys']['DB_NAME'],
     )
     cursor = conn.cursor()
 except pymysql.Error as e:
@@ -63,9 +62,10 @@ def scrape(url):
 
 
 total_list = []
-cursor.execute(f"SELECT URL FROM Data")
+cursor.execute(f"SELECT URL FROM Repos")
 db_url = [item[0] for item in cursor.fetchall()]
 total_list.extend(db_url)
+print(total_list)
 
 
 def crawling(url):
@@ -79,17 +79,16 @@ def crawling(url):
     final_list = []
     i = 1
     while i <= (total / 100) + 1:
-
         final_url = url + 'page={}'.format(i)
         res = requests.get(final_url, auth=(user, token))
         repos = res.json()
         if rescode == 200:
             repos.get('items', 'error')
             repos = res.json()
-            month_list = ([i['html_url'] for i in repos['items']])
+            temp_list = ([i['html_url'] for i in repos['items']])
             for _ in repos['items']:
                 try:
-                    for res_data in month_list:
+                    for res_data in temp_list:
                         if res_data in total_list:
                             continue
                         else:
@@ -100,7 +99,7 @@ def crawling(url):
                     print("error")
 
             i = i + 1
-            month_list.clear()
+            temp_list.clear()
     urls = "http://127.0.0.1:5000/repos"
     headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
     requests.post(urls, json=json.dumps(final_list), headers=headers)
