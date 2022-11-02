@@ -17,6 +17,7 @@ PyMySQL = "1.0.2"
 python-dotenv = "*"
 requests = "2.28.1"
 SQLAlchemy = "1.4.42"
+PyYAML = "6.0"
 
 [dev-packages]
 
