@@ -4,8 +4,20 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-lizard = "*"
+astor = "0.8.1"
+Flask = "2.2.2"
+GitPython = "3.1.29"
+joblib = "1.2.0"
+lizard = "1.17.10"
+mysql-connector-python = "8.0.31"
+pandas = "1.5.1"
+psutil = "5.9.3"
 pyinstaller = "*"
+PyMySQL = "1.0.2"
+python-dotenv = "*"
+requests = "2.28.1"
+SQLAlchemy = "1.4.42"
+PyYAML = "6.0"
 
 [dev-packages]
 

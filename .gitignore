@@ -1,6 +1,7 @@
 # Configuration
 .env
 .idea
+log.json
 
 # Dependency management
 Pipfile.lock
