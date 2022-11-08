@@ -1,6 +1,6 @@
 import ast
 from dataclasses import dataclass, field
-from typing import Union
+from typing import Optional, Union
 
 
 @dataclass(frozen=False)
@@ -8,11 +8,13 @@ class Function:
     name: str
     start_line: int
     lines: int
+    enclosing_class: Optional[str]
     max_depth: int = 0
     branches: int = 0
     calls: int = 0
     returns: int = 0
     raises: int = 0
+    assertions: int = 0
     nested_funcs: list["Function"] = field(default_factory=list)
 
 
@@ -39,13 +41,27 @@ def slice_(node, f: Function, branch_depth: int = 0):
         return
 
 
+_SKIP_THESE = (
+    ast.Name,
+    ast.JoinedStr,
+    ast.Constant,
+    ast.Global,
+    ast.Pass,
+    ast.Import,
+    ast.ImportFrom,
+    ast.Delete,
+    ast.Continue,
+    ast.Break,
+    ast.Lambda,
+)
+
+
 def stmt(node, f: Function, branch_depth: int = 0):
     if node is None:
         return
     if branch_depth > f.max_depth:
         f.max_depth = branch_depth
-    if isinstance(node, (ast.Name, ast.JoinedStr, ast.Constant, ast.Global)):
-        # Skip
+    if isinstance(node, _SKIP_THESE):
         return
     if isinstance(node, (ast.List, ast.Tuple, ast.Set)):
         for elt in node.elts:
@@ -57,6 +73,9 @@ def stmt(node, f: Function, branch_depth: int = 0):
         for val in node.values:
             stmt(val, f, branch_depth)
         return
+    if isinstance(node, ast.Assert):
+        f.assertions += 1
+        return stmt(node.test, f, branch_depth)
     if isinstance(node, ast.Expr):
         return stmt(node.value, f, branch_depth)
     if isinstance(node, ast.NamedExpr):
@@ -74,6 +93,19 @@ def stmt(node, f: Function, branch_depth: int = 0):
         stmt(node.left, f, branch_depth)
         for value in node.comparators:
             stmt(value, f, branch_depth)
+        return
+    if isinstance(node, ast.Starred):
+        return stmt(node.value, f, branch_depth)
+    if isinstance(node, (ast.ListComp, ast.SetComp, ast.GeneratorExp)):
+        stmt(node.elt, f, branch_depth)
+        for gen in node.generators:
+            comprehension(gen, f, branch_depth)
+        return
+    if isinstance(node, ast.DictComp):
+        stmt(node.key, f, branch_depth)
+        stmt(node.value, f, branch_depth)
+        for gen in node.generators:
+            comprehension(gen, f, branch_depth)
         return
     if isinstance(node, ast.Call):
         f.calls += 1
@@ -175,9 +207,14 @@ def stmt(node, f: Function, branch_depth: int = 0):
         stmt(node.exc, f, branch_depth)
         return
     if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
-        analyze_item(node, f.nested_funcs, branch_depth)
+        analyze_item(node, f.nested_funcs, None, branch_depth)
         return
     print(f"Skipped {type(node)}")
+
+
+def comprehension(node: ast.comprehension, f: Function, branch_depth: int = 0):
+    f.branches += len(node.ifs)
+    stmt(node.iter, f, branch_depth)
 
 
 def except_handler(node: ast.ExceptHandler, f: Function, branch_depth: int):
@@ -185,11 +222,13 @@ def except_handler(node: ast.ExceptHandler, f: Function, branch_depth: int):
         stmt(child, f, branch_depth)
 
 
-def function_def(node: Union[ast.FunctionDef, ast.AsyncFunctionDef], branch_depth: int = 0) -> Function:
+def function_def(node: Union[ast.FunctionDef, ast.AsyncFunctionDef], enclosing_class: Optional[str], branch_depth: int = 0) -> Function:
     ret = Function(
         name=node.name,
         start_line=node.lineno,
-        lines=node.end_lineno - node.lineno + 1)
+        lines=node.end_lineno - node.lineno + 1,
+        enclosing_class=enclosing_class,
+    )
     for child in node.body:
         stmt(child, ret, branch_depth)
     return ret
@@ -198,7 +237,7 @@ def function_def(node: Union[ast.FunctionDef, ast.AsyncFunctionDef], branch_dept
 def class_def(node: ast.ClassDef, branch_depth: int = 0) -> list[Function]:
     funcs = []
     for item in node.body:
-        analyze_item(item, funcs, branch_depth)
+        analyze_item(item, funcs, node.name, branch_depth)
     return funcs
 
 
@@ -215,8 +254,8 @@ def analyze_file(file_path: str) -> SourceFile:
     return SourceFile(functions=functions, lines=lines)
 
 
-def analyze_item(node, funcs: list[Function], branch_depth: int = 0):
+def analyze_item(node, funcs: list[Function], enclosing_class: Optional[str] = None, branch_depth: int = 0):
     if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
-        funcs.append(function_def(node, branch_depth))
+        funcs.append(function_def(node, enclosing_class, branch_depth))
     elif isinstance(node, ast.ClassDef):
         funcs.extend(class_def(node, branch_depth))
