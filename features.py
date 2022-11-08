@@ -22,7 +22,7 @@ class SourceFile:
     functions: list[Function] = field(default_factory=list)
 
 
-def slice(node, f: Function, branch_depth: int = 0):
+def slice_(node, f: Function, branch_depth: int = 0):
     if node is None:
         return
     if isinstance(node, ast.Index):
@@ -35,7 +35,7 @@ def slice(node, f: Function, branch_depth: int = 0):
         return
     if isinstance(node, ast.ExtSlice):
         for dim in node.dims:
-            slice(dim, f, branch_depth)
+            slice_(dim, f, branch_depth)
         return
 
 
@@ -94,7 +94,7 @@ def stmt(node, f: Function, branch_depth: int = 0):
         return
     if isinstance(node, ast.Subscript):
         stmt(node.value, f, branch_depth)
-        slice(node.slice, f, branch_depth)
+        slice_(node.slice, f, branch_depth)
         return
     if isinstance(node, ast.Assign):
         for target in node.targets:
