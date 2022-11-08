@@ -72,6 +72,14 @@ def goes_through(q):
                     with open('/Users/yoonjaelee/PycharmProjects/Cyclomatic-Complexity-Analyzer/test/log.json', 'w', encoding='utf-8') as file:
                         json.dump(my, file, indent='\t')
                     shutil.rmtree(mother_direcotry)
+            else:
+                print("no python files found in the repository")
+                my.remove(url)
+                with open('/Users/yoonjaelee/PycharmProjects/Cyclomatic-Complexity-Analyzer/test/log.json', 'w',
+                          encoding='utf-8') as file:
+                    json.dump(my, file, indent='\t')
+                shutil.rmtree(mother_direcotry)
+
 
 
 def make_df(df):
@@ -129,11 +137,11 @@ def get_average(dataframe, path, q):
                  "Max_CCN",
                  "Avg_func_token"]
     )
-    avg_nloc = dataframe['nloc'].mean()
+    avg_nloc = round(dataframe['nloc'].mean(), 2)
     total_loc = dataframe['loc'].sum()
-    avg_ccn = dataframe['CCN'].mean()
+    avg_ccn = round(dataframe['CCN'].mean(), 2)
     max_ccn = dataframe['CCN'].max()
-    avg_token = dataframe['func_token'].mean()
+    avg_token = round(dataframe['func_token'].mean(), 2)
     row_num = dataframe.shape[0]
     timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
