@@ -6,6 +6,7 @@ from typing import Union
 @dataclass(frozen=False)
 class Function:
     name: str
+    start_line: int
     lines: int
     max_depth: int = 0
     branches: int = 0
@@ -185,7 +186,10 @@ def except_handler(node: ast.ExceptHandler, f: Function, branch_depth: int):
 
 
 def function_def(node: Union[ast.FunctionDef, ast.AsyncFunctionDef], branch_depth: int = 0) -> Function:
-    ret = Function(name=node.name, lines=node.end_lineno - node.lineno + 1)
+    ret = Function(
+        name=node.name,
+        start_line=node.lineno,
+        lines=node.end_lineno - node.lineno + 1)
     for child in node.body:
         stmt(child, ret, branch_depth)
     return ret
