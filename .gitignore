@@ -1,6 +1,7 @@
 # Configuration
 .env
 .idea
+config.yml
 log.json
 
 # Dependency management
