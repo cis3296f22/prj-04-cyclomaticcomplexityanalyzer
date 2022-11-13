@@ -20,15 +20,17 @@ def start_gui():
 
     # when user click on the browse button it will take them here
     # as soon as they click the browse button it will change to loading
-    def get_url() -> str:
+    def get_url():
         submit_text.set("Loading...")
         url = input_box.get()
 
-        # Given GitHub URL is not vaild then we prompt the user NEED TO TEST
+        # Given GitHub URL is not valid then we prompt the user NEED TO TEST
         # if not check_github_url(url):
-        #    error_invaild(instraction)
+        #    error_invalid(instruction)
 
         # TODO: call the backend here!!!
+        #  dataframe = somefunction(url)
+        #  show_reuslt(dataframe)
 
         submit_text.set("Enter")
 
