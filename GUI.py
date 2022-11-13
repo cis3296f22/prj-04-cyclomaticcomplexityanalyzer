@@ -29,8 +29,8 @@ def start_gui():
         #    error_invalid(instruction)
 
         # TODO: call the backend here!!!
-        #  dataframe = somefunction(url)
-        #  show_reuslt(dataframe)
+        #  dataframe = some_function(url)
+        #  show_result(dataframe)
 
         submit_text.set("Enter")
 
