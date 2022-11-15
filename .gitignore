@@ -6,8 +6,10 @@ log.json
 
 # Dependency management
 Pipfile.lock
+__pycache__
 
-# pyinstaller build artifacts
+# build artifacts
 build
 dist
+tmp
 *.spec
