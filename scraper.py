@@ -65,8 +65,6 @@ total_list = []
 cursor.execute(f"SELECT URL FROM Repos")
 db_url = [item[0] for item in cursor.fetchall()]
 total_list.extend(db_url)
-print(total_list)
-
 
 def crawling(url):
     requested = urllib.request.Request(url)
