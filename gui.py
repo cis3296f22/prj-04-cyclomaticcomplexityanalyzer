@@ -1,10 +1,9 @@
-import dearpygui.dearpygui as dpg
-import dearpygui.demo as demo
-from typing import Optional, Union
 import subprocess
-import pandas as pd
+from typing import Optional, Union
+
+import dearpygui.dearpygui as dpg
+
 import analysis_api
-import itertools
 
 Id = Union[int, str]
 
@@ -86,16 +85,10 @@ def start() -> Id:
     return ret
 
 
-def show_demo() -> Id:
-    demo.show_demo()
-    return "__demo_id"
-
-
 def main():
     dpg.create_context()
     dpg.create_viewport(title='Custom Title', width=600, height=600)
 
-    # window_id = show_demo()
     window_id = start()
 
     dpg.setup_dearpygui()
