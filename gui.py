@@ -1,7 +1,7 @@
 import dataclasses
 import subprocess
 from typing import Optional, Union
-import functools
+import enum
 
 import dearpygui.dearpygui as dpg
 
@@ -10,35 +10,43 @@ import analysis_api
 Id = Union[int, str]
 
 
+class DataType(enum.Enum):
+    NUMERIC = 1
+    TEXT = 2
+
+
 @dataclasses.dataclass()
 class ColumnInfo:
     raw_name: str
     pretty_name: str
     tooltip: str
+    dtype: DataType
 
 
 DETAILS_COLUMNS = [
-    ColumnInfo('name', 'Name', 'The name of the function, as it appears in the code'),
-    ColumnInfo('start_line', 'Line', 'The line on which the function is defined'),
-    ColumnInfo('nloc', '# Lines', 'The length of the function in lines of code'),
-    ColumnInfo('CCN', 'CCN', 'The cyclomatic complexity number of the function'),
-    ColumnInfo('enclosing_class', 'Class', 'The class in which the function is defined, if any'),
-    ColumnInfo('max_depth', 'Max Depth', 'The greatest number of nested branches in the function'),
-    ColumnInfo('branches', '# Branches', 'The number of branch points in the function'),
-    ColumnInfo('calls', '# Calls', 'The number of function calls in the function'),
-    ColumnInfo('returns', '# Returns', 'The number of `return` statements in the function'),
-    ColumnInfo('raises', '# Raises', 'The number of `raise` statements in the function'),
-    ColumnInfo('assertions', '# Asserts', 'The number of `assert` statements in the function'),
+    ColumnInfo('name', 'Name', 'The name of the function, as it appears in the code', DataType.TEXT),
+    ColumnInfo('start_line', 'Line', 'The line on which the function is defined', DataType.NUMERIC),
+    ColumnInfo('nloc', '# Lines', 'The length of the function in lines of code', DataType.NUMERIC),
+    ColumnInfo('CCN', 'CCN', 'The cyclomatic complexity number of the function', DataType.NUMERIC),
+    ColumnInfo('enclosing_class', 'Class', 'The class in which the function is defined, if any', DataType.TEXT),
+    ColumnInfo('max_depth', 'Max Depth', 'The greatest number of nested branches in the function', DataType.NUMERIC),
+    ColumnInfo('branches', '# Branches', 'The number of branch points in the function', DataType.NUMERIC),
+    ColumnInfo('calls', '# Calls', 'The number of function calls in the function', DataType.NUMERIC),
+    ColumnInfo('returns', '# Returns', 'The number of `return` statements in the function', DataType.NUMERIC),
+    ColumnInfo('raises', '# Raises', 'The number of `raise` statements in the function', DataType.NUMERIC),
+    ColumnInfo('assertions', '# Asserts', 'The number of `assert` statements in the function', DataType.NUMERIC),
 ]
 DETAILS_COLUMNS = {info.raw_name: info for info in DETAILS_COLUMNS}
 PRETTY_DETAILS_COLUMNS = {v.pretty_name: v for v in DETAILS_COLUMNS.values()}
 
 SUMMARY_COLUMNS = [
-    ColumnInfo('file_dir', 'Path', 'The path from the root of the repository to the file'),
-    ColumnInfo('file_name', 'Name', 'The name of the file'),
-    ColumnInfo('nloc', '# Lines', 'The length of the file in lines of code'),
-    ColumnInfo('CCN', 'CCN', 'The sum of the cyclomatic complexity numbers of all functions in the file'),
-    ColumnInfo('func_token', '# Tokens', 'The number of individual tokens (keywords, identifiers, etc.) in the file'),
+    ColumnInfo('file_dir', 'Path', 'The path from the root of the repository to the file', DataType.TEXT),
+    ColumnInfo('file_name', 'Name', 'The name of the file', DataType.TEXT),
+    ColumnInfo('nloc', '# Lines', 'The length of the file in lines of code', DataType.NUMERIC),
+    ColumnInfo('CCN', 'CCN', 'The sum of the cyclomatic complexity numbers of all functions in the file',
+               DataType.NUMERIC),
+    ColumnInfo('func_token', '# Tokens', 'The number of individual tokens (keywords, identifiers, etc.) in the file',
+               DataType.NUMERIC),
 ]
 SUMMARY_COLUMNS = {info.raw_name: info for info in SUMMARY_COLUMNS}
 PRETTY_SUMMARY_COLUMNS = {v.pretty_name: v for v in SUMMARY_COLUMNS.values()}
@@ -108,7 +116,7 @@ def start() -> Id:
             [_, file_name] = file.rsplit('\\', 1)
 
             with dpg.tab(label=f"{file_name}", parent=data_tab_bar, user_data=file):
-                with dpg.table(callback=sort_details_callback, sortable=True, sort_multi=True) as tbl:
+                with dpg.table(callback=sort_details_callback, sortable=True, sort_multi=True, policy=dpg.mvTable_SizingStretchProp) as tbl:
                     write_table(tbl, df, DETAILS_COLUMNS)
 
     def write_table(table_id, df, columns: dict[str, ColumnInfo]):
@@ -117,10 +125,15 @@ def start() -> Id:
         for i in range(ncols):
             prefer_ascending = i <= 1
             column_info = columns[df.columns[i]]
-            dpg.add_table_column(label=column_info.pretty_name, default_sort=False,
-                                 parent=table_id,
-                                 prefer_sort_ascending=prefer_ascending,
-                                 prefer_sort_descending=not prefer_ascending)
+            col_stretch = column_info.dtype == DataType.TEXT
+            col = dpg.add_table_column(label=column_info.pretty_name, default_sort=False,
+                                       parent=table_id,
+                                       prefer_sort_ascending=prefer_ascending,
+                                       prefer_sort_descending=not prefer_ascending,
+                                       width_stretch=col_stretch,
+                                       )
+            with dpg.tooltip(col):
+                dpg.add_text(column_info.tooltip)
         for i in range(nrows):
             with dpg.table_row(parent=table_id):
                 for j in range(ncols):

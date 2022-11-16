@@ -81,7 +81,7 @@ class ClonedRepo:
             functions = []
             for func in lizard_analysis.function_list:
                 key = (func.name, func.start_line)
-                extra = extra_analysis[key]
+                extra = extra_analysis.get(key, features.Function('<missing>', -1, -1, None))
                 functions.append({
                     'name': func.name,
                     'start_line': func.start_line,
@@ -114,10 +114,7 @@ class ClonedRepo:
             })
         self.repo_analysis = pd.DataFrame(data=files_data,
                                           columns=['file_dir', 'file_name', 'nloc', 'CCN', 'func_token'])
-        try:
-            remove_dir(self.root_path)
-        finally:
-            pass
+        remove_dir(self.root_path)
 
 
 def clone_repo(url: str) -> ClonedRepo:
@@ -127,7 +124,7 @@ def clone_repo(url: str) -> ClonedRepo:
     """
     [user_name, repo_name] = url.rsplit('/', 2)[1:]
     working_dir = Path(os.getcwd())
-    temp_dir = working_dir / "tmp" / user_name / repo_name
+    temp_dir = working_dir / "tmp" / f"{user_name}_{repo_name}"
     try:
         Repo.clone_from(url, temp_dir)
     except git.GitCommandError as err:
