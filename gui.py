@@ -64,7 +64,7 @@ def start() -> Id:
         else:
             dpg.set_value(mimic_text_id, "Invalid")
 
-    def sort_callback(tbl, sort_specs):
+    def sort_details_callback(tbl, sort_specs):
         if sort_specs is None:
             return
         sort_specs = [(PRETTY_DETAILS_COLUMNS[dpg.get_item_label(x)].raw_name, y == 1) for x, y in sort_specs]
@@ -80,6 +80,17 @@ def start() -> Id:
         df = per_file[file_path]
         write_table(tbl, df, DETAILS_COLUMNS)
 
+    def sort_summary_callback(tbl, sort_specs):
+        if sort_specs is None:
+            return
+        sort_specs = [(PRETTY_SUMMARY_COLUMNS[dpg.get_item_label(x)].raw_name, y == 1) for x, y in sort_specs]
+        [sort, ascending] = zip(*sort_specs)
+        repo_analysis = repo.analyze_repo(
+            sort=sort,
+            ascending=ascending,
+        )
+        write_table(tbl, repo_analysis, SUMMARY_COLUMNS)
+
     def fill_table(url: str):
         nonlocal repo, data_tab_bar
         repo = analysis_api.ClonedRepo.from_url(url)
@@ -89,7 +100,7 @@ def start() -> Id:
         dpg.delete_item(data_tab_bar, children_only=True)
         dpg.delete_item(summary_tab, children_only=True)
 
-        with dpg.table(parent=summary_tab) as tbl:
+        with dpg.table(parent=summary_tab, callback=sort_summary_callback, sortable=True, sort_multi=True) as tbl:
             write_table(tbl, repo_analysis, SUMMARY_COLUMNS)
         for file, df in per_file.items():
             if df.empty:
@@ -97,7 +108,7 @@ def start() -> Id:
             [_, file_name] = file.rsplit('\\', 1)
 
             with dpg.tab(label=f"{file_name}", parent=data_tab_bar, user_data=file):
-                with dpg.table(callback=sort_callback, sortable=True, sort_multi=True) as tbl:
+                with dpg.table(callback=sort_details_callback, sortable=True, sort_multi=True) as tbl:
                     write_table(tbl, df, DETAILS_COLUMNS)
 
     def write_table(table_id, df, columns: dict[str, ColumnInfo]):

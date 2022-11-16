@@ -48,14 +48,17 @@ class ClonedRepo:
             if any(x == file for x in files_to_include)
         }
 
-    def analyze_repo(self, file_filter: Callable[[pd.DataFrame], pd.DataFrame] = None, sort: list[str] = None, ascending: bool = True) -> pd.DataFrame:
+    def analyze_repo(self, file_filter: Callable[[pd.DataFrame], pd.DataFrame] = None, sort: list[str] = None,
+                     ascending: Union[bool, Iterable[bool]] = None) -> pd.DataFrame:
         if self.repo_analysis is None:
             self.perform_analysis()
         files_to_include = self.repo_analysis
         if file_filter is not None:
             files_to_include = file_filter(files_to_include)
         if sort is not None:
-            files_to_include = files_to_include.sort_values(by=sort, ascending=ascending)
+            if ascending is None:
+                ascending = [True for _ in sort]
+            files_to_include = files_to_include.sort_values(by=list(sort), ascending=ascending)
         return files_to_include
 
     def perform_analysis(self):
