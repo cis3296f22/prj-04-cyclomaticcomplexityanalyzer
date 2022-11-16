@@ -11,7 +11,7 @@ import pandas as pd
 from pathlib import Path
 import shutil
 import stat
-from typing import Callable
+from typing import Callable, Iterable, Union
 
 
 class ClonedRepo:
@@ -27,7 +27,7 @@ class ClonedRepo:
         return clone_repo(url)
 
     def analyze_files(self, file_filter: Callable[[pd.DataFrame], pd.DataFrame] = None, func_filter: Callable[[pd.DataFrame], pd.DataFrame] = None, sort: list[str] = None,
-                      ascending: bool = True) -> dict[str, pd.DataFrame]:
+                      ascending: Union[bool, Iterable[bool]] = None) -> dict[str, pd.DataFrame]:
         if self.file_analysis is None:
             self.perform_analysis()
         files_to_include = self.repo_analysis
@@ -35,9 +35,11 @@ class ClonedRepo:
             files_to_include = file_filter(files_to_include)
         files_to_include = files_to_include.file_dir + '\\' + files_to_include.file_name
         if func_filter is None:
-            func_filter = lambda x: x
+            func_filter = lambda x: x == x
         if sort is not None:
-            sorter = lambda x: x.sort_values(by=sort, ascending=ascending)
+            if ascending is None:
+                ascending = [True for _ in sort]
+            sorter = lambda x: x.sort_values(by=list(sort), ascending=list(ascending))
         else:
             sorter = lambda x: x
         return {
@@ -46,14 +48,17 @@ class ClonedRepo:
             if any(x == file for x in files_to_include)
         }
 
-    def analyze_repo(self, file_filter: Callable[[pd.DataFrame], pd.DataFrame] = None, sort: list[str] = None, ascending: bool = True) -> pd.DataFrame:
+    def analyze_repo(self, file_filter: Callable[[pd.DataFrame], pd.DataFrame] = None, sort: list[str] = None,
+                     ascending: Union[bool, Iterable[bool]] = None) -> pd.DataFrame:
         if self.repo_analysis is None:
             self.perform_analysis()
         files_to_include = self.repo_analysis
         if file_filter is not None:
             files_to_include = file_filter(files_to_include)
         if sort is not None:
-            files_to_include = files_to_include.sort_values(by=sort, ascending=ascending)
+            if ascending is None:
+                ascending = [True for _ in sort]
+            files_to_include = files_to_include.sort_values(by=list(sort), ascending=ascending)
         return files_to_include
 
     def perform_analysis(self):
@@ -76,7 +81,7 @@ class ClonedRepo:
             functions = []
             for func in lizard_analysis.function_list:
                 key = (func.name, func.start_line)
-                extra = extra_analysis[key]
+                extra = extra_analysis.get(key, features.Function('<missing>', -1, -1, None))
                 functions.append({
                     'name': func.name,
                     'start_line': func.start_line,
@@ -109,10 +114,7 @@ class ClonedRepo:
             })
         self.repo_analysis = pd.DataFrame(data=files_data,
                                           columns=['file_dir', 'file_name', 'nloc', 'CCN', 'func_token'])
-        try:
-            remove_dir(self.root_path)
-        finally:
-            pass
+        remove_dir(self.root_path)
 
 
 def clone_repo(url: str) -> ClonedRepo:
@@ -122,7 +124,7 @@ def clone_repo(url: str) -> ClonedRepo:
     """
     [user_name, repo_name] = url.rsplit('/', 2)[1:]
     working_dir = Path(os.getcwd())
-    temp_dir = working_dir / "tmp" / user_name / repo_name
+    temp_dir = working_dir / "tmp" / f"{user_name}_{repo_name}"
     try:
         Repo.clone_from(url, temp_dir)
     except git.GitCommandError as err:
