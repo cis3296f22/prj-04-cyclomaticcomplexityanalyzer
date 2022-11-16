@@ -12,9 +12,10 @@ def start() -> Id:
     input_text_box_id: Id
     mimic_text_id: Id
     loading_icon_id: Id
-    table_id: Id
     repo: Optional[analysis_api.ClonedRepo] = None
     data_tab_bar: Id
+    summary_tab: Id
+    details_tab: Id
 
     def on_input_text_enter(_, app_data, _user_data):
         dpg.show_item(loading_icon_id)
@@ -47,8 +48,13 @@ def start() -> Id:
         nonlocal repo, data_tab_bar
         repo = analysis_api.ClonedRepo.from_url(url)
         per_file = repo.analyze_files()
+        repo_analysis = repo.analyze_repo()
 
         dpg.delete_item(data_tab_bar, children_only=True)
+        dpg.delete_item(summary_tab, children_only=True)
+
+        with dpg.table(parent=summary_tab) as tbl:
+            write_table(tbl, repo_analysis)
         for file, df in per_file.items():
             if df.empty:
                 continue
@@ -80,14 +86,17 @@ def start() -> Id:
             input_text_box_id = dpg.add_input_text(hint="Enter your repository URL, then press Enter",
                                                    callback=on_input_text_enter, on_enter=True)
             loading_icon_id = dpg.add_loading_indicator(style=1, color=(0, 0, 0, 255), show=False)
-        data_tab_bar = dpg.add_tab_bar()
+        with dpg.tab_bar():
+            summary_tab = dpg.add_tab(label='Summary')
+            details_tab = dpg.add_tab(label='Details')
+            data_tab_bar = dpg.add_tab_bar(parent=details_tab)
 
     return ret
 
 
 def main():
     dpg.create_context()
-    dpg.create_viewport(title='Custom Title', width=600, height=600)
+    dpg.create_viewport(title='Cyclomatic Complexity Analyzer', width=600, height=600)
 
     window_id = start()
 
