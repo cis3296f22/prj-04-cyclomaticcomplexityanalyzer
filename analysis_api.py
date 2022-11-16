@@ -11,7 +11,7 @@ import pandas as pd
 from pathlib import Path
 import shutil
 import stat
-from typing import Callable
+from typing import Callable, Iterable, Union
 
 
 class ClonedRepo:
@@ -27,7 +27,7 @@ class ClonedRepo:
         return clone_repo(url)
 
     def analyze_files(self, file_filter: Callable[[pd.DataFrame], pd.DataFrame] = None, func_filter: Callable[[pd.DataFrame], pd.DataFrame] = None, sort: list[str] = None,
-                      ascending: bool = True) -> dict[str, pd.DataFrame]:
+                      ascending: Union[bool, Iterable[bool]] = None) -> dict[str, pd.DataFrame]:
         if self.file_analysis is None:
             self.perform_analysis()
         files_to_include = self.repo_analysis
@@ -37,7 +37,9 @@ class ClonedRepo:
         if func_filter is None:
             func_filter = lambda x: x == x
         if sort is not None:
-            sorter = lambda x: x.sort_values(by=sort, ascending=ascending)
+            if ascending is None:
+                ascending = [True for _ in sort]
+            sorter = lambda x: x.sort_values(by=list(sort), ascending=list(ascending))
         else:
             sorter = lambda x: x
         return {

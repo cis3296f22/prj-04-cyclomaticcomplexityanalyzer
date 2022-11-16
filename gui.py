@@ -2,7 +2,9 @@ import dearpygui.dearpygui as dpg
 import dearpygui.demo as demo
 from typing import Optional, Union
 import subprocess
+import pandas as pd
 import analysis_api
+import itertools
 
 Id = Union[int, str]
 
@@ -26,6 +28,22 @@ def start() -> Id:
         else:
             dpg.set_value(mimic_text_id, "Invalid")
 
+    def sort_callback(tbl, sort_specs):
+        if sort_specs is None:
+            return
+        sort_specs = [(dpg.get_item_label(x), y == 1) for x, y in sort_specs]
+        [sort, ascending] = zip(*sort_specs)
+        tab = dpg.get_item_parent(tbl)
+        file_path = dpg.get_item_user_data(tab)
+        [_, file_name] = file_path.rsplit('\\', 1)
+        per_file = repo.analyze_files(
+            file_filter=lambda df: df[df.file_name == file_name],
+            sort=sort,
+            ascending=ascending,
+        )
+        df = per_file[file_path]
+        write_table(tbl, df)
+
     def fill_table(url: str):
         nonlocal repo, data_tab_bar
         repo = analysis_api.ClonedRepo.from_url(url)
@@ -33,17 +51,29 @@ def start() -> Id:
 
         dpg.delete_item(data_tab_bar, children_only=True)
         for file, df in per_file.items():
+            if df.empty:
+                continue
             [_, file_name] = file.rsplit('\\', 1)
 
-            with dpg.tab(label=f"{file_name}", parent=data_tab_bar):
-                [nrows, ncols, *_] = df.shape
-                with dpg.table():
-                    for i in range(ncols):
-                        dpg.add_table_column(label=df.columns[i])
-                    for i in range(nrows):
-                        with dpg.table_row():
-                            for j in range(ncols):
-                                dpg.add_text(f"{df.iloc[i,j]}")
+            with dpg.tab(label=f"{file_name}", parent=data_tab_bar, user_data=file):
+                with dpg.table(callback=sort_callback, sortable=True, sort_multi=True) as tbl:
+                    write_table(tbl, df)
+
+    def write_table(table_id, df):
+        dpg.delete_item(table_id, children_only=True)
+        [nrows, ncols, *_] = df.shape
+        for i in range(ncols):
+            prefer_ascending = i != 0
+            dpg.add_table_column(label=df.columns[i], default_sort=False,
+                                 parent=table_id,
+                                 prefer_sort_ascending=prefer_ascending,
+                                 prefer_sort_descending=not prefer_ascending)
+        for i in range(nrows):
+            with dpg.table_row(parent=table_id):
+                for j in range(ncols):
+                    text = df.iloc[i, j]
+                    text = "None" if text == "nan" else text
+                    dpg.add_text(f"{text}")
 
     with dpg.window(label='Cyclomatic Complexity Analyzer', width=800, height=800, pos=(100, 100)) as ret:
         mimic_text_id = dpg.add_text(default_value="Fill in the text box")
