@@ -19,6 +19,7 @@ python-dotenv = "*"
 requests = "2.28.1"
 SQLAlchemy = "1.4.42"
 PyYAML = "6.0"
+dearpygui = "*"
 
 [dev-packages]
 

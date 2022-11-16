@@ -35,7 +35,7 @@ class ClonedRepo:
             files_to_include = file_filter(files_to_include)
         files_to_include = files_to_include.file_dir + '\\' + files_to_include.file_name
         if func_filter is None:
-            func_filter = lambda x: x
+            func_filter = lambda x: x == x
         if sort is not None:
             sorter = lambda x: x.sort_values(by=sort, ascending=ascending)
         else:
