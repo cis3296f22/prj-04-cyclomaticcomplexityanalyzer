@@ -1,15 +1,15 @@
 import dataclasses
 import enum
+import math
 import subprocess
+from pathlib import Path
 from typing import Optional, Union
 
 import dearpygui.dearpygui as dpg
-import pandas as pd
 import numpy as np
-from pathlib import Path
+import pandas as pd
 
 import analysis_api
-import math
 
 Id = Union[int, str]
 
@@ -142,7 +142,7 @@ def start() -> Id:
                         x_max = int(np.max(X)) + 1
                         x_tick_step = math.ceil((x_max - 1) / 10)
                         dpg.set_axis_ticks(dpg.last_item(), tuple((str(x), x) for x in range(1, x_max, x_tick_step)))
-                        dpg.set_axis_limits(x_tag, np.min(X)-1, np.max(X)+1)
+                        dpg.set_axis_limits(x_tag, np.min(X) - 1, np.max(X) + 1)
                         dpg.add_plot_axis(dpg.mvYAxis, label='Count', tag=y_tag)
 
                         y_max = np.max(Y) + 1
