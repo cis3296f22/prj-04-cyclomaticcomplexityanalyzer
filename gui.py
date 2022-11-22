@@ -1,9 +1,13 @@
 import dataclasses
-import subprocess
-from typing import Optional, Union
 import enum
+import math
+import subprocess
+from pathlib import Path
+from typing import Optional, Union
 
 import dearpygui.dearpygui as dpg
+import numpy as np
+import pandas as pd
 
 import analysis_api
 
@@ -54,8 +58,9 @@ PRETTY_SUMMARY_COLUMNS = {v.pretty_name: v for v in SUMMARY_COLUMNS.values()}
 
 def start() -> Id:
     input_text_box_id: Id
-    mimic_text_id: Id
     loading_icon_id: Id
+    save_button_id: Id
+    save_tooltip_id: Id
     repo: Optional[analysis_api.ClonedRepo] = None
     data_tab_bar: Id
     summary_tab: Id
@@ -67,18 +72,16 @@ def start() -> Id:
                                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0
         dpg.hide_item(loading_icon_id)
         if is_valid:
-            dpg.set_value(mimic_text_id, "Valid")
             fill_table(app_data)
-        else:
-            dpg.set_value(mimic_text_id, "Invalid")
+            dpg.show_item(save_button_id)
+            dpg.show_item(save_tooltip_id)
 
     def sort_details_callback(tbl, sort_specs):
         if sort_specs is None:
             return
         sort_specs = [(PRETTY_DETAILS_COLUMNS[dpg.get_item_label(x)].raw_name, y == 1) for x, y in sort_specs]
         [sort, ascending] = zip(*sort_specs)
-        tab = dpg.get_item_parent(tbl)
-        file_path = dpg.get_item_user_data(tab)
+        file_path = dpg.get_item_user_data(tbl)
         [_, file_name] = file_path.rsplit('\\', 1)
         per_file = repo.analyze_files(
             file_filter=lambda df: df[df.file_name == file_name],
@@ -115,9 +118,49 @@ def start() -> Id:
                 continue
             [_, file_name] = file.rsplit('\\', 1)
 
-            with dpg.tab(label=f"{file_name}", parent=data_tab_bar, user_data=file):
-                with dpg.table(callback=sort_details_callback, sortable=True, sort_multi=True, policy=dpg.mvTable_SizingStretchProp) as tbl:
-                    write_table(tbl, df, DETAILS_COLUMNS)
+            with dpg.tab(label=file_name, parent=data_tab_bar, user_data=file):
+                with dpg.group(horizontal=False):
+                    with dpg.table(callback=sort_details_callback, sortable=True, sort_multi=True,
+                                   policy=dpg.mvTable_SizingStretchProp, user_data=file, scrollY=True,
+                                   height=400, width=-1) as tbl:
+                        write_table(tbl, df, DETAILS_COLUMNS)
+                    X, Y = make_histogram_series(df)
+                    title = "CCN Histogram"
+                    # fix awkward scaling if CCN=1 greatly outweighs other values
+                    if X[0] == 1 and Y[0] - max(Y[1:]) > 15:
+                        X, Y = X[1:], Y[1:]
+                        title += " (without CCN=1)"
+                    with dpg.plot(label=title, height=-1, width=-1):
+                        x_tag = f"{file}__x_axis"
+                        y_tag = f"{file}__y_axis"
+
+                        dpg.add_plot_axis(dpg.mvXAxis, label='CCN', tag=x_tag, no_gridlines=True)
+                        x_max = int(np.max(X)) + 1
+                        x_tick_step = math.ceil((x_max - 1) / 10)
+                        dpg.set_axis_ticks(dpg.last_item(), tuple((str(x), x) for x in range(1, x_max, x_tick_step)))
+                        dpg.set_axis_limits(x_tag, np.min(X) - 1, np.max(X) + 1)
+                        dpg.add_plot_axis(dpg.mvYAxis, label='Count', tag=y_tag)
+
+                        y_max = np.max(Y) + 1
+                        y_tick_step = math.ceil((y_max - 1) / 4)
+                        dpg.set_axis_ticks(dpg.last_item(), tuple((str(x), x) for x in range(0, y_max, y_tick_step)))
+                        dpg.set_axis_limits(y_tag, 0, y_max)
+
+                        dpg.add_bar_series(X, Y, parent=dpg.last_item(), weight=0.5)
+
+    def make_histogram_series(df):
+        uniq_values = len(df.groupby(['CCN']))
+        num_bins = min(uniq_values, 8)
+        labels = list(range(num_bins))
+        bars, bins = pd.cut(df.get('CCN'), num_bins, labels=labels, retbins=True)
+        bins = bins[:-1]
+        bins[0] = math.ceil(bins[0])
+        bins[-1] = math.ceil(bins[-1])
+        bins = np.floor(bins)
+        ret = [0] * num_bins
+        for x in list(bars):
+            ret[x] += 1
+        return bins, ret
 
     def write_table(table_id, df, columns: dict[str, ColumnInfo]):
         dpg.delete_item(table_id, children_only=True)
@@ -141,12 +184,44 @@ def start() -> Id:
                     text = "None" if text == "nan" else text
                     dpg.add_text(f"{text}")
 
+    def on_save_button_press(sender, app_data):
+        dpg.show_item('save_dir_id')
+
+    def on_save_dir_selected(sender, app_data):
+        dpg.hide_item(sender)
+        path = Path(app_data['file_path_name'])
+        if not path.exists():
+            path.mkdir()
+        summary_path = path / 'summary.csv'
+        repo.repo_analysis.to_csv(summary_path)
+        details_dir = path / "details"
+        print(details_dir)
+        if not details_dir.exists():
+            details_dir.mkdir()
+        for file, df in repo.file_analysis.items():
+            file_path = file.strip('\\/')
+            parent_path = file_path.split('\\')[:-1]
+            dir = details_dir
+            for segment in parent_path:
+                dir = dir / segment
+                if not dir.exists():
+                    dir.mkdir()
+            csv_path = details_dir / f"{file_path}.csv"
+            print(csv_path)
+            df.to_csv(csv_path)
+
+    dpg.add_file_dialog(directory_selector=True, show=False, tag='save_dir_id',
+                        callback=on_save_dir_selected, width=400, height=400)
+
     with dpg.window(label='Cyclomatic Complexity Analyzer', width=800, height=800, pos=(100, 100)) as ret:
-        mimic_text_id = dpg.add_text(default_value="Fill in the text box")
         with dpg.group(horizontal=True):
             input_text_box_id = dpg.add_input_text(hint="Enter your repository URL, then press Enter",
                                                    callback=on_input_text_enter, on_enter=True)
+            save_button_id = dpg.add_button(label='Save', show=False, callback=on_save_button_press)
             loading_icon_id = dpg.add_loading_indicator(style=1, color=(0, 0, 0, 255), show=False)
+
+            save_tooltip_id = dpg.add_tooltip(save_button_id, show=False)
+            dpg.add_text('Save the raw data as a collection of CSV files', parent=save_tooltip_id)
         with dpg.tab_bar():
             summary_tab = dpg.add_tab(label='Summary')
             details_tab = dpg.add_tab(label='Details')
