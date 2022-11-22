@@ -6,6 +6,7 @@ from typing import Optional, Union
 import dearpygui.dearpygui as dpg
 import pandas as pd
 import numpy as np
+from pathlib import Path
 
 import analysis_api
 import math
@@ -59,6 +60,7 @@ def start() -> Id:
     input_text_box_id: Id
     mimic_text_id: Id
     loading_icon_id: Id
+    save_button_id: Id
     repo: Optional[analysis_api.ClonedRepo] = None
     data_tab_bar: Id
     summary_tab: Id
@@ -72,6 +74,7 @@ def start() -> Id:
         if is_valid:
             dpg.set_value(mimic_text_id, "Valid")
             fill_table(app_data)
+            dpg.show_item(save_button_id)
         else:
             dpg.set_value(mimic_text_id, "Invalid")
 
@@ -161,7 +164,6 @@ def start() -> Id:
             ret[x] += 1
         return bins, ret
 
-
     def write_table(table_id, df, columns: dict[str, ColumnInfo]):
         dpg.delete_item(table_id, children_only=True)
         [nrows, ncols, *_] = df.shape
@@ -184,11 +186,41 @@ def start() -> Id:
                     text = "None" if text == "nan" else text
                     dpg.add_text(f"{text}")
 
+    def on_save_button_press(sender, app_data):
+        dpg.show_item('save_dir_id')
+
+    def on_save_dir_selected(sender, app_data):
+        dpg.hide_item(sender)
+        path = Path(app_data['file_path_name'])
+        if not path.exists():
+            path.mkdir()
+        summary_path = path / 'summary.csv'
+        repo.repo_analysis.to_csv(summary_path)
+        details_dir = path / "details"
+        print(details_dir)
+        if not details_dir.exists():
+            details_dir.mkdir()
+        for file, df in repo.file_analysis.items():
+            file_path = file.strip('\\/')
+            parent_path = file_path.split('\\')[:-1]
+            dir = details_dir
+            for segment in parent_path:
+                dir = dir / segment
+                if not dir.exists():
+                    dir.mkdir()
+            csv_path = details_dir / f"{file_path}.csv"
+            print(csv_path)
+            df.to_csv(csv_path)
+
+    dpg.add_file_dialog(directory_selector=True, show=False, tag='save_dir_id',
+                        callback=on_save_dir_selected, width=400, height=400)
+
     with dpg.window(label='Cyclomatic Complexity Analyzer', width=800, height=800, pos=(100, 100)) as ret:
         mimic_text_id = dpg.add_text(default_value="Fill in the text box")
         with dpg.group(horizontal=True):
             input_text_box_id = dpg.add_input_text(hint="Enter your repository URL, then press Enter",
                                                    callback=on_input_text_enter, on_enter=True)
+            save_button_id = dpg.add_button(label='Save', show=False, callback=on_save_button_press)
             loading_icon_id = dpg.add_loading_indicator(style=1, color=(0, 0, 0, 255), show=False)
         with dpg.tab_bar():
             summary_tab = dpg.add_tab(label='Summary')
