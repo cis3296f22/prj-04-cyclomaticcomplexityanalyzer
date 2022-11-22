@@ -61,6 +61,7 @@ def start() -> Id:
     mimic_text_id: Id
     loading_icon_id: Id
     save_button_id: Id
+    save_tooltip_id: Id
     repo: Optional[analysis_api.ClonedRepo] = None
     data_tab_bar: Id
     summary_tab: Id
@@ -75,6 +76,7 @@ def start() -> Id:
             dpg.set_value(mimic_text_id, "Valid")
             fill_table(app_data)
             dpg.show_item(save_button_id)
+            dpg.show_item(save_tooltip_id)
         else:
             dpg.set_value(mimic_text_id, "Invalid")
 
@@ -222,6 +224,9 @@ def start() -> Id:
                                                    callback=on_input_text_enter, on_enter=True)
             save_button_id = dpg.add_button(label='Save', show=False, callback=on_save_button_press)
             loading_icon_id = dpg.add_loading_indicator(style=1, color=(0, 0, 0, 255), show=False)
+
+            save_tooltip_id = dpg.add_tooltip(save_button_id, show=False)
+            dpg.add_text('Save the raw data as a collection of CSV files', parent=save_tooltip_id)
         with dpg.tab_bar():
             summary_tab = dpg.add_tab(label='Summary')
             details_tab = dpg.add_tab(label='Details')
