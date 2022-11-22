@@ -58,7 +58,6 @@ PRETTY_SUMMARY_COLUMNS = {v.pretty_name: v for v in SUMMARY_COLUMNS.values()}
 
 def start() -> Id:
     input_text_box_id: Id
-    mimic_text_id: Id
     loading_icon_id: Id
     save_button_id: Id
     save_tooltip_id: Id
@@ -73,12 +72,9 @@ def start() -> Id:
                                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0
         dpg.hide_item(loading_icon_id)
         if is_valid:
-            dpg.set_value(mimic_text_id, "Valid")
             fill_table(app_data)
             dpg.show_item(save_button_id)
             dpg.show_item(save_tooltip_id)
-        else:
-            dpg.set_value(mimic_text_id, "Invalid")
 
     def sort_details_callback(tbl, sort_specs):
         if sort_specs is None:
@@ -218,7 +214,6 @@ def start() -> Id:
                         callback=on_save_dir_selected, width=400, height=400)
 
     with dpg.window(label='Cyclomatic Complexity Analyzer', width=800, height=800, pos=(100, 100)) as ret:
-        mimic_text_id = dpg.add_text(default_value="Fill in the text box")
         with dpg.group(horizontal=True):
             input_text_box_id = dpg.add_input_text(hint="Enter your repository URL, then press Enter",
                                                    callback=on_input_text_enter, on_enter=True)
