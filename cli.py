@@ -23,7 +23,7 @@ def format_analysis(info):
 def main():
     args = sys.argv[1:]
     if len(args) != 1:
-        print("Usage: main.py <file_path>")
+        print("Usage: cli.py <file_path>")
         return
     fpath = args[0]
     info = lizard.analyze_file(fpath)

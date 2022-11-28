@@ -5,6 +5,7 @@ from typing import Optional, Union
 
 @dataclass(frozen=False)
 class Function:
+    """Statistics and identifying information for a single function"""
     name: str
     start_line: int
     lines: int
@@ -20,11 +21,16 @@ class Function:
 
 @dataclass()
 class SourceFile:
+    """A wrapper around a single source file"""
     lines: int
     functions: list[Function] = field(default_factory=list)
 
 
 def slice_(node, f: Function, branch_depth: int = 0):
+    """Handles slice syntax as that can get rather complicated.
+    For example, numpy arrays allow multidimensional slicing like
+    `A[:,1:5, :10]`
+    """
     if node is None:
         return
     if isinstance(node, ast.Index):
@@ -41,6 +47,8 @@ def slice_(node, f: Function, branch_depth: int = 0):
         return
 
 
+# AST elements we don't care about. Roughly, these are the leaf nodes of
+# the abstract syntax tree.
 _SKIP_THESE = (
     ast.Name,
     ast.JoinedStr,
@@ -57,7 +65,12 @@ _SKIP_THESE = (
 
 
 def stmt(node, f: Function, branch_depth: int = 0):
+    """Recursively traverses a single statement and collects code statistics.
+
+    This could probably be made far more efficient, but it works well for our purposes.
+    """
     if node is None:
+        # It's not clear that this can ever happen
         return
     if branch_depth > f.max_depth:
         f.max_depth = branch_depth
@@ -173,6 +186,7 @@ def stmt(node, f: Function, branch_depth: int = 0):
             for child in node.orelse:
                 stmt(child, f, branch_depth + 1)
         return
+    # Our code runs on Python version 3.9, which doesn't yet have match statements.
     # if isinstance(node, ast.Match):
     #     print("skipped match statement: not implemented")
     #     return
@@ -213,11 +227,13 @@ def stmt(node, f: Function, branch_depth: int = 0):
 
 
 def comprehension(node: ast.comprehension, f: Function, branch_depth: int = 0):
+    """Handles list, tuple, and dictionary comprehensions"""
     f.branches += len(node.ifs)
     stmt(node.iter, f, branch_depth)
 
 
 def except_handler(node: ast.ExceptHandler, f: Function, branch_depth: int):
+    """Handles `except` blocks"""
     for child in node.body:
         stmt(child, f, branch_depth)
 
