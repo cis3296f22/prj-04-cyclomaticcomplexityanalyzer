@@ -15,18 +15,21 @@ Id = Union[int, str]
 
 
 class DataType(enum.Enum):
+    """The datatype of elements of a single table column"""
     NUMERIC = 1
     TEXT = 2
 
 
 @dataclasses.dataclass()
 class ColumnInfo:
+    """Contextual information about a single table column"""
     raw_name: str
     pretty_name: str
     tooltip: str
     dtype: DataType
 
 
+# The columns of the Details data table
 DETAILS_COLUMNS = [
     ColumnInfo('name', 'Name', 'The name of the function, as it appears in the code', DataType.TEXT),
     ColumnInfo('start_line', 'Line', 'The line on which the function is defined', DataType.NUMERIC),
@@ -43,6 +46,7 @@ DETAILS_COLUMNS = [
 DETAILS_COLUMNS = {info.raw_name: info for info in DETAILS_COLUMNS}
 PRETTY_DETAILS_COLUMNS = {v.pretty_name: v for v in DETAILS_COLUMNS.values()}
 
+# The columns of the Summary data table
 SUMMARY_COLUMNS = [
     ColumnInfo('file_dir', 'Path', 'The path from the root of the repository to the file', DataType.TEXT),
     ColumnInfo('file_name', 'Name', 'The name of the file', DataType.TEXT),
@@ -66,7 +70,15 @@ def start() -> Id:
     summary_tab: Id
     details_tab: Id
 
-    def on_input_text_enter(_, app_data, _user_data):
+    def on_input_text_enter(_sender, app_data, _user_data):
+        """When the `enter` key is pressed after text was input into the textbox, we want to:
+
+        1. Show the loading icon
+        2. Check if the text is a valid git repository URL. We use `git ls-remote <url>` for this
+        3. Hide the loading icon
+        4. Fill out the data tables with the repository data
+        5. Make the "save" button visible
+        """
         dpg.show_item(loading_icon_id)
         is_valid = subprocess.run(['git', 'ls-remote', app_data],
                                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0
@@ -77,12 +89,14 @@ def start() -> Id:
             dpg.show_item(save_tooltip_id)
 
     def sort_details_callback(tbl, sort_specs):
+        """Sorts the Details data table for a single file"""
         if sort_specs is None:
             return
         sort_specs = [(PRETTY_DETAILS_COLUMNS[dpg.get_item_label(x)].raw_name, y == 1) for x, y in sort_specs]
         [sort, ascending] = zip(*sort_specs)
         file_path = dpg.get_item_user_data(tbl)
         [_, file_name] = file_path.rsplit('\\', 1)
+        # Analyze only the file that the table belongs to
         per_file = repo.analyze_files(
             file_filter=lambda df: df[df.file_name == file_name],
             sort=sort,
@@ -92,6 +106,7 @@ def start() -> Id:
         write_table(tbl, df, DETAILS_COLUMNS)
 
     def sort_summary_callback(tbl, sort_specs):
+        """Sorts the Summary data table for the entire repository"""
         if sort_specs is None:
             return
         sort_specs = [(PRETTY_SUMMARY_COLUMNS[dpg.get_item_label(x)].raw_name, y == 1) for x, y in sort_specs]
@@ -103,6 +118,8 @@ def start() -> Id:
         write_table(tbl, repo_analysis, SUMMARY_COLUMNS)
 
     def fill_table(url: str):
+        """Uses the repository data to fill out the Summary table, the Details tables,
+        and to display relevant CCN histograms"""
         nonlocal repo, data_tab_bar
         repo = analysis_api.ClonedRepo.from_url(url)
         per_file = repo.analyze_files()
@@ -111,19 +128,26 @@ def start() -> Id:
         dpg.delete_item(data_tab_bar, children_only=True)
         dpg.delete_item(summary_tab, children_only=True)
 
+        # Write out the Summary table
         with dpg.table(parent=summary_tab, callback=sort_summary_callback, sortable=True, sort_multi=True) as tbl:
             write_table(tbl, repo_analysis, SUMMARY_COLUMNS)
+
+        # For each non-empty code file we have statistics for:
         for file, df in per_file.items():
             if df.empty:
                 continue
             [_, file_name] = file.rsplit('\\', 1)
 
-            with dpg.tab(label=file_name, parent=data_tab_bar, user_data=file):
+            # Create a new tab in the Details section
+            with dpg.tab(label=file_name, parent=data_tab_bar, user_data=file, closable=True):
                 with dpg.group(horizontal=False):
                     with dpg.table(callback=sort_details_callback, sortable=True, sort_multi=True,
                                    policy=dpg.mvTable_SizingStretchProp, user_data=file, scrollY=True,
                                    height=400, width=-1) as tbl:
+                        # Write out the Details table for this file
                         write_table(tbl, df, DETAILS_COLUMNS)
+
+                    # Create a histogram
                     X, Y = make_histogram_series(df)
                     title = "CCN Histogram"
                     # fix awkward scaling if CCN=1 greatly outweighs other values
@@ -149,6 +173,8 @@ def start() -> Id:
                         dpg.add_bar_series(X, Y, parent=dpg.last_item(), weight=0.5)
 
     def make_histogram_series(df):
+        """Reorganizes CCN data for a single file into buckets, then makes the bucket boundaries
+        prettier."""
         uniq_values = len(df.groupby(['CCN']))
         num_bins = min(uniq_values, 8)
         labels = list(range(num_bins))
@@ -188,6 +214,8 @@ def start() -> Id:
         dpg.show_item('save_dir_id')
 
     def on_save_dir_selected(sender, app_data):
+        """Saves all of the repository data in the file system in the same
+        structure as the original file tree"""
         dpg.hide_item(sender)
         path = Path(app_data['file_path_name'])
         if not path.exists():
@@ -242,5 +270,5 @@ def main():
     dpg.start_dearpygui()
     dpg.destroy_context()
 
-
-main()
+if __name__ == '__main__':
+    main()
