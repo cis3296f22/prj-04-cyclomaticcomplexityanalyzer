@@ -9,7 +9,7 @@ import dearpygui.dearpygui as dpg
 import numpy as np
 import pandas as pd
 
-import analysis_api
+from gui import analysis_api
 
 Id = Union[int, str]
 

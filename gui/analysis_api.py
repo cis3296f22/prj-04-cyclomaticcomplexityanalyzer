@@ -10,7 +10,7 @@ import lizard
 import pandas as pd
 from git.repo.base import Repo
 
-import features
+from gui import features
 
 
 class ClonedRepo:
