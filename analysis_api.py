@@ -17,6 +17,10 @@ class ClonedRepo:
     """A repository that was cloned to the local file system. It will be lazily
     analyzed and deleted once analysis is complete. The results of analysis are
     cached for repeated use.
+
+    :field root_path: The relative or absolute path to the root of the local copy of the repository
+    :field user_name: The name of the user who created the repository, if any
+    :field repo_name: The name of the repository, if any
     """
     def __init__(self, root_path: Path, user_name: str, repo_name: str):
         self.root_path = root_path
@@ -27,7 +31,8 @@ class ClonedRepo:
 
     @staticmethod
     def from_url(url: str) -> "ClonedRepo":
-        """
+        """Creates a new `ClonedRepo` from the repository at the given URL.
+
         :param url: The URL of the repository
         :return: A `ClonedRepo` instance for the repository at `url`.
         :raise git.GitCommandError: if the URL is not the root of a valid
@@ -158,7 +163,7 @@ class ClonedRepo:
             })
         self.repo_analysis = pd.DataFrame(data=files_data,
                                           columns=['file_dir', 'file_name', 'nloc', 'CCN', 'func_token'])
-        remove_dir(self.root_path)
+        _remove_dir(self.root_path)
 
 
 def clone_repo(url: str) -> ClonedRepo:
@@ -176,7 +181,7 @@ def clone_repo(url: str) -> ClonedRepo:
         # exists in the temp directory. In that case, we ignore the error, delete that part of
         # the temp directory, and try again.
         if 'exists' in str(err):
-            remove_dir(temp_dir)
+            _remove_dir(temp_dir)
             Repo.clone_from(url, temp_dir)
         else:
             raise err
@@ -200,10 +205,10 @@ def flatten_nested_functions(funcs: list[features.Function]):
         i += 1
 
 
-def remove_dir(path):
-    shutil.rmtree(path, onerror=remove_readonly)
+def _remove_dir(path):
+    shutil.rmtree(path, onerror=_remove_readonly)
 
 
-def remove_readonly(f, path, _):
+def _remove_readonly(f, path, _):
     os.chmod(path, stat.S_IWRITE)
     f(path)
