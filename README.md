@@ -10,10 +10,10 @@ and identify part of the code that impacts the Cyclomatic Complexity Number the 
 <img width="766" alt="Screen_Shot_2022-10-20_at_2 56 29_PM" src="https://user-images.githubusercontent.com/97626684/197665715-34e22a16-06f4-40e3-81c0-12e7fc5a079b.png">
 
 # Class Diagram
-![2022-10-31_19-46](https://user-images.githubusercontent.com/42981577/199322911-a0d613ba-e95b-459d-ac31-e9b822e16af4.png)
-  
-  First, we use the class scraper to “scrap”/clone by using GitHub API the project from GitHub into a certain directory. Then in the main, we read the files in the local repository that we just cloned. Next, we call the lizard API, to help us analyze the code’s cyclomatic complexity number.
+![CCA_Class_Diagram (1)](https://user-images.githubusercontent.com/112198910/204877913-a3e0fb3a-920f-4786-8e61-adc321f90350.png)
 
+  
+  First, the user will encounter the GUI of our program, which prompts them to enter a GitHub URL to a repository that they wish to analyze, then we use the class scraper to “scrape”/clone by using GitHub API the project from GitHub. Then in the main, we read the files in the local repository that we just cloned. Next, we call the lizard API, to help us analyze the code’s cyclomatic complexity number. After that, we will delete the local file and then display the result in GUI. Things that we can expect from the GUI are CCN(cyclomatic complex number) and the number of function calls that a program uses. All statists of the program and its performance in a nice and easy way which calculate in a short amount of time.
 
 
 # Setup
