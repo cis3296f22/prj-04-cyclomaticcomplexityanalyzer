@@ -5,24 +5,45 @@ from typing import Optional, Union
 
 @dataclass(frozen=False)
 class Function:
-    """Statistics and identifying information for a single function"""
+    """Statistics and identifying information for a single function.
+
+    Since the `dataclasses` library was used to create this class, documentation cannot be generated
+    for it. See the source code for a more accurate representation of the program structure.
+    """
+    # The name of the function
     name: str
+    # The line that the function starts on
     start_line: int
+    # The number of lines of code that the function takes up
     lines: int
+    # The class that this function is defined inside of, if any
     enclosing_class: Optional[str]
+    # The maximum branch depth reached in the function body
     max_depth: int = 0
+    # The number of branch points in the function body
     branches: int = 0
+    # The number of function calls in the function body
     calls: int = 0
+    # The number of `return` statements in the function body
     returns: int = 0
+    # The number of `raises` statements in the function body
     raises: int = 0
+    # The number of `assert` statements in the function body
     assertions: int = 0
+    # Any functions that are defined in the function body
     nested_funcs: list["Function"] = field(default_factory=list)
 
 
 @dataclass()
 class SourceFile:
-    """A wrapper around a single source file"""
+    """A wrapper around a single source file.
+
+    Since the `dataclasses` library was used to create this class, documentation cannot be generated
+    for it. See the source code for a more accurate representation of the program structure.
+    """
+    # The number of lines in the file
     lines: int
+    # Any function that are defined in the file
     functions: list[Function] = field(default_factory=list)
 
 
@@ -30,6 +51,10 @@ def slice_(node, f: Function, branch_depth: int = 0):
     """Handles slice syntax as that can get rather complicated.
     For example, numpy arrays allow multidimensional slicing like
     `A[:,1:5, :10]`
+
+    :param node: The AST root node to traverse
+    :param f: The most recent enclosing function, if any
+    :param branch_depth: The current recursive branch depth. Defaults to 0
     """
     if node is None:
         return
@@ -68,6 +93,10 @@ def stmt(node, f: Function, branch_depth: int = 0):
     """Recursively traverses a single statement and collects code statistics.
 
     This could probably be made far more efficient, but it works well for our purposes.
+
+    :param node: The AST node to traverse
+    :param f: The most recent enclosing function
+    :param branch_depth: The current recursive branch depth. Defaults to 0.
     """
     if node is None:
         # It's not clear that this can ever happen
@@ -227,18 +256,35 @@ def stmt(node, f: Function, branch_depth: int = 0):
 
 
 def comprehension(node: ast.comprehension, f: Function, branch_depth: int = 0):
-    """Handles list, tuple, and dictionary comprehensions"""
+    """Handles list, tuple, and dictionary comprehensions
+
+    :param node: The AST node to traverse
+    :param f: The most recent enclosing function
+    :param branch_depth: The current recursive branch depth. Defaults to 0.
+    """
     f.branches += len(node.ifs)
     stmt(node.iter, f, branch_depth)
 
 
 def except_handler(node: ast.ExceptHandler, f: Function, branch_depth: int):
-    """Handles `except` blocks"""
+    """Handles `except` blocks
+
+    :param node: The AST node to traverse
+    :param f: The most recent enclosing function
+    :param branch_depth: The current recursive branch depth. Defaults to 0.
+    """
     for child in node.body:
         stmt(child, f, branch_depth)
 
 
 def function_def(node: Union[ast.FunctionDef, ast.AsyncFunctionDef], enclosing_class: Optional[str], branch_depth: int = 0) -> Function:
+    """Traverses a function definition and returns a statistical representation of the function body.
+
+    :param node: The AST node to traverse
+    :param enclosing_class: The most recent enclosing class, if any
+    :param branch_depth: The current recursive branch depth. Defaults to 0.
+    :return: A representation of the function, including all relevant statistics.
+    """
     ret = Function(
         name=node.name,
         start_line=node.lineno,
@@ -251,6 +297,12 @@ def function_def(node: Union[ast.FunctionDef, ast.AsyncFunctionDef], enclosing_c
 
 
 def class_def(node: ast.ClassDef, branch_depth: int = 0) -> list[Function]:
+    """Traverses a class definition and returns a statistical representation of any functions defined inside.
+
+    :param node: The AST node to traverse
+    :param branch_depth: The current recursive branch depth. Defaults to 0.
+    :return: A list of the functions that were defined inside the class.
+    """
     funcs = []
     for item in node.body:
         analyze_item(item, funcs, node.name, branch_depth)
@@ -258,6 +310,11 @@ def class_def(node: ast.ClassDef, branch_depth: int = 0) -> list[Function]:
 
 
 def analyze_file(file_path: str) -> SourceFile:
+    """Analyze the file at the given path and return a statistical representation of its contents.
+
+    :param file_path: The relative or absolute path to the file to analyze.
+    :return: An in-memory representation of the contents of the file.
+    """
     with open(file_path, mode='r') as fp:
         source = fp.read()
         root: ast.Module = ast.parse(source, mode='exec')
@@ -271,6 +328,13 @@ def analyze_file(file_path: str) -> SourceFile:
 
 
 def analyze_item(node, funcs: list[Function], enclosing_class: Optional[str] = None, branch_depth: int = 0):
+    """Analyzes a single item and adds any functions encountered to the list
+
+    :param node: The AST node to traverse.
+    :param funcs: The list of functions that any new functions will be added to.
+    :param enclosing_class: The most recent enclosing class, if any.
+    :param branch_depth: The current recursive branch depth. Defaults to 0.
+    """
     if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
         funcs.append(function_def(node, enclosing_class, branch_depth))
     elif isinstance(node, ast.ClassDef):
